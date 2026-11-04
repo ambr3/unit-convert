@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-bg="grid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Convert units on this device. Nothing is sent anywhere.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Seclusa Convert">
+  <meta name="version" content="0.1.1">
+
+  <!--
+    Permissions-Policy in a <meta> tag is inert. Browsers only honour it as a
+    response header. It is here so the intent is visible next to the page that
+    needs it.
+  -->
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()">
+
+  <!--
+    CSP meta. `connect-src 'none'` is the important one: the app cannot make a
+    network request even if it wanted to. There is no server, no API key and no
+    analytics. `frame-ancestors` is deliberately absent: browsers ignore it
+    inside <meta>.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; media-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; child-src 'none'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests">
+
+  <title>Seclusa Convert</title>
+
+  <script src="static/js/theme-boot.js"></script>
+  <link rel="stylesheet" href="static/css/seclusa-base.css">
+  <link rel="stylesheet" href="static/css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="static/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="static/icons/icon-192.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <h1 class="brand">Seclusa Convert</h1>
+    <button type="button" class="accentpill" id="btn-theme" aria-haspopup="dialog" aria-controls="sheet-theme">Theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="cat-row" id="category-row" role="tablist" aria-label="Unit category"></div>
+
+  <section class="converter" aria-label="Unit converter">
+    <label class="field">
+      <span class="field-label">Value</span>
+      <input type="text" id="from-value" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Value to convert">
+    </label>
+
+    <label class="field">
+      <span class="field-label">From</span>
+      <select id="from-unit" aria-label="From unit"></select>
+    </label>
+
+    <div class="swap-row">
+      <button type="button" class="btn" id="btn-swap" aria-label="Swap units">↕ Swap</button>
+    </div>
+
+    <label class="field">
+      <span class="field-label">To</span>
+      <select id="to-unit" aria-label="To unit"></select>
+    </label>
+
+    <div class="result" aria-live="polite">
+      <div class="result-label">Result</div>
+      <div class="result-value" id="result-value">—</div>
+      <div class="result-hint" id="result-hint"></div>
+      <div class="buttonrow mt12">
+        <button type="button" class="btn" id="btn-copy">Copy result</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>
+      <a href="LICENSE">GPL-3.0</a>
+      · Made with <span class="heart" role="img" aria-label="love">❤️</span>
+      <span class="flag" role="img" aria-label="United Kingdom">🇬🇧</span>
+    </p>
+  </footer>
+</main>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet-theme" role="dialog" aria-modal="false" aria-label="Theme" aria-hidden="true">
+  <div class="sheet-handle" aria-hidden="true"></div>
+  <h3>Theme</h3>
+  <p class="note">Mode</p>
+  <div class="theme-mode-row" role="group" aria-label="Colour mode">
+    <button type="button" class="theme-chip" data-theme-opt="system" role="menuitemradio" aria-checked="false">System</button>
+    <button type="button" class="theme-chip" data-theme-opt="light" role="menuitemradio" aria-checked="false">Light</button>
+    <button type="button" class="theme-chip" data-theme-opt="dark" role="menuitemradio" aria-checked="false">Dark</button>
+  </div>
+  <p class="note">Background</p>
+  <div class="theme-swatches" role="group" aria-label="Background style">
+    <button type="button" class="theme-swatch" data-bg-opt="grid" aria-label="Lines" title="Orange lines" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="blue" aria-label="Blue" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="lightblue" aria-label="Light blue" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="teal" aria-label="Teal" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="green" aria-label="Green" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="yellow" aria-label="Yellow" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="orange" aria-label="Orange" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="red" aria-label="Red" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="purple" aria-label="Purple" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="black" aria-label="Black" role="menuitemradio" aria-checked="false"></button>
+    <button type="button" class="theme-swatch" data-bg-opt="white" aria-label="White" role="menuitemradio" aria-checked="false"></button>
+    <label class="theme-swatch theme-swatch-custom" id="bgCustomSwatch" data-bg-opt="custom" title="Custom colour" aria-label="Custom colour" role="menuitemradio" aria-checked="false">
+      <input type="color" id="bgCustomPicker" value="#5faff0" aria-label="Pick a custom background colour">
+    </label>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="static/js/store.js"></script>
+<script src="static/js/theme.js"></script>
+<script src="static/js/convert.js"></script>
+<script src="static/js/app.js"></script>
+</body>
+</html>
