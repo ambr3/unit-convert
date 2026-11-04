@@ -27,17 +27,7 @@
   }
 
   function loadState() {
-    var data = window.Store.getData() || {};
-    var category = window.Convert.categoryById(data.category) ? data.category : DEFAULTS.category;
-    var cat = window.Convert.categoryById(category);
-    var fallbackFrom = window.Convert.unitById(cat, DEFAULTS.from) ? DEFAULTS.from : cat.units[0].id;
-    var fallbackTo = window.Convert.unitById(cat, DEFAULTS.to)
-      ? DEFAULTS.to
-      : (cat.units[1] ? cat.units[1].id : cat.units[0].id);
-    var from = window.Convert.unitById(cat, data.from) ? data.from : fallbackFrom;
-    var to = window.Convert.unitById(cat, data.to) ? data.to : fallbackTo;
-    var value = typeof data.value === "string" ? data.value : DEFAULTS.value;
-    return { category: category, from: from, to: to, value: value };
+    return window.Convert.normalizeState(window.Store.getData(), DEFAULTS);
   }
 
   function saveState(state) {
@@ -50,6 +40,7 @@
   }
 
   function fillUnitSelect(select, category, selectedId) {
+    if (!select || !category) return;
     select.innerHTML = "";
     category.units.forEach(function (unit) {
       var opt = document.createElement("option");
@@ -200,13 +191,20 @@
 
   /* ---------------------------------------------------------------- boot */
 
+  function on(id, event, handler) {
+    var node = $(id);
+    if (!node) return null;
+    node.addEventListener(event, handler);
+    return node;
+  }
+
   function boot() {
     wireTheme();
 
     var state = loadState();
     paint(state);
 
-    $("category-row").addEventListener("click", function (event) {
+    on("category-row", "click", function (event) {
       var btn = event.target.closest("[data-category]");
       if (!btn) return;
       var next = btn.getAttribute("data-category");
@@ -219,25 +217,31 @@
       paint(state);
     });
 
-    $("from-value").addEventListener("input", function () {
-      state.value = $("from-value").value;
+    on("from-value", "input", function () {
+      var input = $("from-value");
+      if (!input) return;
+      state.value = input.value;
       saveState(state);
       updateResult(state);
     });
 
-    $("from-unit").addEventListener("change", function () {
-      state.from = $("from-unit").value;
+    on("from-unit", "change", function () {
+      var select = $("from-unit");
+      if (!select) return;
+      state.from = select.value;
       saveState(state);
       updateResult(state);
     });
 
-    $("to-unit").addEventListener("change", function () {
-      state.to = $("to-unit").value;
+    on("to-unit", "change", function () {
+      var select = $("to-unit");
+      if (!select) return;
+      state.to = select.value;
       saveState(state);
       updateResult(state);
     });
 
-    $("btn-swap").addEventListener("click", function () {
+    on("btn-swap", "click", function () {
       var parsed = window.Convert.parseInput(state.value);
       var result = window.Convert.convert(state.category, parsed, state.from, state.to);
       var tmp = state.from;
@@ -248,8 +252,9 @@
       paint(state);
     });
 
-    $("btn-copy").addEventListener("click", function () {
-      var text = $("result-value").textContent;
+    on("btn-copy", "click", function () {
+      var out = $("result-value");
+      var text = out ? out.textContent : "";
       if (!text || text === "—") {
         toast("Nothing to copy");
         return;
@@ -265,8 +270,13 @@
       }
     });
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(function () { /* ignore */ });
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(function (err) {
+        try {
+          console.warn("Seclusa Convert: service worker registration failed", err);
+        } catch (e) { /* ignore */ }
+        toast("Offline install failed");
+      });
     }
   }
 

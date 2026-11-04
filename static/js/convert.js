@@ -238,15 +238,76 @@
     return fixed.replace(/\.?0+$/, "");
   }
 
+  /**
+   * Parse a user-typed number.
+   * Handles US (1,234.56) and European (1.234,56) grouping; a lone comma with
+   * 1–2 fractional digits is treated as a decimal (1,5 → 1.5).
+   */
   function parseInput(raw) {
     if (typeof raw !== "string") {
       if (typeof raw === "number") return isFinite(raw) ? raw : NaN;
       return NaN;
     }
-    var cleaned = raw.trim().replace(",", ".");
-    if (cleaned === "" || cleaned === "-" || cleaned === "." || cleaned === "-.") return NaN;
-    var n = Number(cleaned);
+    var cleaned = raw.trim().replace(/\s/g, "");
+    if (cleaned === "" || cleaned === "-" || cleaned === "." || cleaned === ","
+      || cleaned === "-." || cleaned === "-,") {
+      return NaN;
+    }
+
+    var lastComma = cleaned.lastIndexOf(",");
+    var lastDot = cleaned.lastIndexOf(".");
+    var normalized;
+
+    if (lastComma !== -1 && lastDot !== -1) {
+      if (lastComma > lastDot) {
+        /* European: 1.234,56 */
+        normalized = cleaned.replace(/\./g, "").replace(",", ".");
+      } else {
+        /* US: 1,234.56 */
+        normalized = cleaned.replace(/,/g, "");
+      }
+    } else if (lastComma !== -1) {
+      /* Only commas. Groups of three → thousands; otherwise decimal. */
+      if (/^-?\d{1,3}(,\d{3})+$/.test(cleaned)) {
+        normalized = cleaned.replace(/,/g, "");
+      } else {
+        normalized = cleaned.replace(",", ".");
+      }
+    } else if (lastDot !== -1) {
+      /* Only dots. Groups of three → thousands; otherwise decimal. */
+      if (/^-?\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+        normalized = cleaned.replace(/\./g, "");
+      } else {
+        normalized = cleaned;
+      }
+    } else {
+      normalized = cleaned;
+    }
+
+    if (!/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(normalized)) return NaN;
+    var n = Number(normalized);
     return isFinite(n) ? n : NaN;
+  }
+
+  /**
+   * Validate persisted prefs against the catalog. Unknown ids fall back to
+   * `defaults` (or the first units in the chosen category).
+   */
+  function normalizeState(data, defaults) {
+    var d = defaults || {};
+    var bag = data && typeof data === "object" ? data : {};
+    var category = categoryById(bag.category) ? bag.category : (d.category || "length");
+    var cat = categoryById(category);
+    var fallbackFrom = unitById(cat, d.from) ? d.from : cat.units[0].id;
+    var fallbackTo = unitById(cat, d.to)
+      ? d.to
+      : (cat.units[1] ? cat.units[1].id : cat.units[0].id);
+    return {
+      category: category,
+      from: unitById(cat, bag.from) ? bag.from : fallbackFrom,
+      to: unitById(cat, bag.to) ? bag.to : fallbackTo,
+      value: typeof bag.value === "string" ? bag.value : (typeof d.value === "string" ? d.value : "1")
+    };
   }
 
   global.Convert = {
@@ -255,6 +316,7 @@
     unitById: unitById,
     convert: convert,
     format: format,
-    parseInput: parseInput
+    parseInput: parseInput,
+    normalizeState: normalizeState
   };
 })(typeof window !== "undefined" ? window : globalThis);

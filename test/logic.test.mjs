@@ -135,9 +135,51 @@ test("parseInput accepts commas and rejects junk", () => {
   assert.ok(Number.isNaN(Convert.parseInput("abc")));
 });
 
+test("parseInput handles US and European grouping", () => {
+  assert.equal(Convert.parseInput("1,234"), 1234);
+  assert.equal(Convert.parseInput("1,234.56"), 1234.56);
+  assert.equal(Convert.parseInput("1.234,56"), 1234.56);
+  assert.equal(Convert.parseInput("1.234.567"), 1234567);
+  assert.ok(Number.isNaN(Convert.parseInput("12,34,56")));
+});
+
 test("format trims trailing zeros", () => {
   assert.equal(Convert.format(0), "0");
   assert.equal(Convert.format(2), "2");
   assert.equal(Convert.format(2.5), "2.5");
   assert.equal(Convert.format(NaN), "—");
+});
+
+test("format uses compact form for tiny values", () => {
+  assert.equal(Convert.format(1e-7), "1e-7");
+});
+
+test("swap round-trip returns to the original length", () => {
+  const ft = Convert.convert("length", 1, "m", "ft");
+  const back = Convert.convert("length", ft, "ft", "m");
+  assert.ok(Math.abs(back - 1) < 1e-12);
+});
+
+test("normalizeState drops unknown category and units", () => {
+  const state = Convert.normalizeState(
+    { category: "nope", from: "x", to: "y", value: "9" },
+    { category: "length", from: "m", to: "ft", value: "1" }
+  );
+  assert.equal(state.category, "length");
+  assert.equal(state.from, "m");
+  assert.equal(state.to, "ft");
+  assert.equal(state.value, "9");
+});
+
+test("normalizeState keeps valid prefs", () => {
+  const state = Convert.normalizeState(
+    { category: "temperature", from: "C", to: "F", value: "100" },
+    { category: "length", from: "m", to: "ft", value: "1" }
+  );
+  assert.deepEqual(state, {
+    category: "temperature",
+    from: "C",
+    to: "F",
+    value: "100",
+  });
 });
