@@ -24,7 +24,7 @@
  *     they hard-reload: new hashes, old bytes.
  */
 
-const VERSION = "0.1.3";
+const VERSION = "0.1.4";
 const CACHE_PREFIX = "seclusa-convert-";
 const CACHE = `${CACHE_PREFIX}v${VERSION}`;
 
@@ -44,6 +44,7 @@ const PRECACHE = [
   "./static/icons/icon-192.png",
   "./static/icons/icon-512.png",
   "./static/icons/icon-maskable-512.png",
+  "./LICENSE",
 ];
 
 /**
@@ -75,9 +76,9 @@ async function cachedShell(request) {
   const cache = await caches.open(CACHE);
   const hit = await cache.match(request);
   if (hit) return hit;
-  const offline = await cache.match("./offline.html");
-  if (offline) return offline;
-  return cache.match("./");
+  const index = (await cache.match("./index.html")) || (await cache.match("./"));
+  if (index) return index;
+  return cache.match("./offline.html");
 }
 
 const REQUIRED = ["./index.html", "./offline.html", "./static/js/app.js", "./static/js/convert.js", "./static/css/app.css"];

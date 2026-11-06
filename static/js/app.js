@@ -27,7 +27,20 @@
   }
 
   function loadState() {
-    return window.Convert.normalizeState(window.Store.getData(), DEFAULTS);
+    var raw = window.Store.getData();
+    var state = window.Convert.normalizeState(raw, DEFAULTS);
+    var hasData = !!(raw && (
+      raw.category || raw.from || raw.to
+      || typeof raw.value === "string" || typeof raw.value === "number"
+    ));
+    var dirty = hasData && (
+      raw.value !== state.value
+      || raw.category !== state.category
+      || raw.from !== state.from
+      || raw.to !== state.to
+    );
+    if (dirty) saveState(state);
+    return state;
   }
 
   function saveState(state) {
@@ -41,7 +54,7 @@
 
   function fillUnitSelect(select, category, selectedId) {
     if (!select || !category) return;
-    select.innerHTML = "";
+    select.replaceChildren();
     category.units.forEach(function (unit) {
       var opt = document.createElement("option");
       opt.value = unit.id;
@@ -54,7 +67,7 @@
   function renderCategories(activeId) {
     var row = $("category-row");
     if (!row) return;
-    row.innerHTML = "";
+    row.replaceChildren();
     window.Convert.CATEGORIES.forEach(function (cat) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -108,29 +121,42 @@
   }
 
   function showSheet(id) {
-    closeSheet();
+    closeSheet({ returnFocus: false });
     openSheetId = id;
     var scrim = $("scrim");
     var sheet = $(id);
     if (scrim) scrim.classList.add("open");
     if (sheet) {
+      sheet.inert = false;
       sheet.classList.add("open");
       sheet.setAttribute("aria-hidden", "false");
+      sheet.setAttribute("aria-modal", "true");
     }
-    if (id === "sheet-theme") syncThemeChrome();
+    if (id === "sheet-theme") {
+      syncThemeChrome();
+      var focus = sheet && sheet.querySelector("[data-theme-opt]");
+      if (focus) focus.focus();
+    }
   }
 
-  function closeSheet() {
+  function closeSheet(opts) {
+    var was = openSheetId;
     if (openSheetId) {
       var sheet = $(openSheetId);
       if (sheet) {
         sheet.classList.remove("open");
+        sheet.inert = true;
         sheet.setAttribute("aria-hidden", "true");
+        sheet.setAttribute("aria-modal", "false");
       }
     }
     openSheetId = null;
     var scrim = $("scrim");
     if (scrim) scrim.classList.remove("open");
+    if (was === "sheet-theme" && (!opts || opts.returnFocus !== false)) {
+      var button = $("btn-theme");
+      if (button) button.focus();
+    }
   }
 
   function wireTheme() {
@@ -185,7 +211,30 @@
     }
 
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeSheet();
+      if (event.key === "Escape") {
+        closeSheet();
+        return;
+      }
+      if (event.key !== "Tab" || !openSheetId) return;
+      var sheet = $(openSheetId);
+      if (!sheet) return;
+      var nodes = sheet.querySelectorAll("button, input, select, textarea, a[href]");
+      var list = [];
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].disabled) continue;
+        list.push(nodes[i]);
+      }
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      var active = document.activeElement;
+      if (event.shiftKey && (active === first || !sheet.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !sheet.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     });
   }
 
@@ -220,6 +269,8 @@
     on("from-value", "input", function () {
       var input = $("from-value");
       if (!input) return;
+      var cap = window.Convert.MAX_VALUE_CHARS || 64;
+      if (input.value.length > cap) input.value = input.value.slice(0, cap);
       state.value = input.value;
       saveState(state);
       updateResult(state);
@@ -252,6 +303,22 @@
       paint(state);
     });
 
+    on("btn-clear", "click", function () {
+      window.Store.clearAll();
+      state = {
+        category: DEFAULTS.category,
+        from: DEFAULTS.from,
+        to: DEFAULTS.to,
+        value: DEFAULTS.value
+      };
+      window.Theme.set("system");
+      window.Theme.setBackground("grid");
+      syncThemeChrome();
+      paint(state);
+      closeSheet();
+      toast("Cleared data on this device");
+    });
+
     on("btn-copy", "click", function () {
       var out = $("result-value");
       var text = out ? out.textContent : "";
@@ -271,9 +338,9 @@
     });
 
     if ("serviceWorker" in navigator && location.protocol !== "file:") {
-      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(function (err) {
+      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).catch(function () {
         try {
-          console.warn("Seclusa Convert: service worker registration failed", err);
+          console.warn("Seclusa Convert: service worker registration failed");
         } catch (e) { /* ignore */ }
         toast("Offline install failed");
       });

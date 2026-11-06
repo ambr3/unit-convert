@@ -86,9 +86,15 @@
     delete memory[key];
   }
 
+  var MAX_STORED_CHARS = 8192;
+
   function readJSON(key, fallback) {
     var raw = readRaw(key);
     if (raw === null || raw === "") return fallback;
+    if (raw.length > MAX_STORED_CHARS) {
+      removeRaw(key);
+      return fallback;
+    }
     try {
       var parsed = JSON.parse(raw);
       return parsed === null || parsed === undefined ? fallback : parsed;
@@ -133,7 +139,7 @@
 
   function getSettings() {
     var stored = readJSON(KEY_SETTINGS, {});
-    if (!stored || typeof stored !== "object") stored = {};
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) stored = {};
     return {
       theme: stored.theme === "light" || stored.theme === "dark" ? stored.theme : "system",
       background: normalizeBackground(stored.background),
@@ -144,7 +150,7 @@
   function setSettings(patch) {
     /* Merge into the raw bag so unknown keys (and background) are not wiped. */
     var stored = readJSON(KEY_SETTINGS, {});
-    if (!stored || typeof stored !== "object") stored = {};
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) stored = {};
     for (var k in patch) {
       if (Object.prototype.hasOwnProperty.call(patch, k) && patch[k] != null) {
         stored[k] = patch[k];
@@ -155,12 +161,8 @@
   }
 
   function getTheme() {
-    try {
-      var v = window.localStorage.getItem(KEY_THEME);
-      if (v === "light" || v === "dark") return v;
-    } catch (err) {
-      /* Fall through. */
-    }
+    var v = readRaw(KEY_THEME);
+    if (v === "light" || v === "dark") return v;
     return getSettings().theme;
   }
 
@@ -177,8 +179,10 @@
     try {
       if (value === "system") window.localStorage.removeItem(KEY_THEME);
       else window.localStorage.setItem(KEY_THEME, value);
+      delete memory[KEY_THEME];
     } catch (err) {
-      writeRaw(KEY_THEME, value);
+      if (value === "system") removeRaw(KEY_THEME);
+      else writeRaw(KEY_THEME, value);
     }
     return value;
   }
@@ -208,7 +212,11 @@
 
   function getData() {
     var value = readJSON(KEY_DATA, {});
-    return value && typeof value === "object" ? value : {};
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      removeRaw(KEY_DATA);
+      return {};
+    }
+    return value;
   }
 
   function setData(value) {

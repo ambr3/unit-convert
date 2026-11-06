@@ -150,8 +150,57 @@ test("format trims trailing zeros", () => {
   assert.equal(Convert.format(NaN), "—");
 });
 
-test("format uses compact form for tiny values", () => {
+test("format uses compact form for tiny and huge values", () => {
   assert.equal(Convert.format(1e-7), "1e-7");
+  assert.equal(Convert.format(1e9), "1e9");
+  assert.equal(Convert.format(1.25e9), "1.25e9");
+  assert.equal(Convert.format(-1.23e-7), "-1.23e-7");
+});
+
+test("grouped numbers can carry an exponent", () => {
+  assert.equal(Convert.parseInput("1,234e2"), 123400);
+  assert.equal(Convert.parseInput("1.234.567e2"), 123456700);
+  assert.equal(Convert.parseInput("1.234e2"), 123.4);
+  assert.equal(Convert.parseInput("1,5e1"), 15);
+});
+
+test("theme is remembered when storage throws", () => {
+  const throwing = {
+    getItem() { throw new Error("blocked"); },
+    setItem() { throw new Error("blocked"); },
+    removeItem() { throw new Error("blocked"); },
+  };
+  const { Store } = load("store.js", { localStorage: throwing });
+  assert.equal(Store.setTheme("dark"), "dark");
+  assert.equal(Store.getTheme(), "dark");
+  Store.setTheme("system");
+  assert.equal(Store.getTheme(), "system");
+});
+
+test("a single dot is a decimal point", () => {
+  assert.equal(Convert.parseInput("1.234"), 1.234);
+  assert.equal(Convert.parseInput("1.500"), 1.5);
+  assert.equal(Convert.parseInput("10.000"), 10);
+  assert.equal(Convert.parseInput("+32"), 32);
+  assert.equal(Convert.parseInput("1."), 1);
+  assert.equal(Convert.parseInput("-1.234"), -1.234);
+});
+
+test("three decimal places stay fractional metres", () => {
+  const km = Convert.convert("length", Convert.parseInput("1.500"), "m", "km");
+  assert.ok(Math.abs(km - 0.0015) < 1e-12);
+});
+
+test("zero is a real measurement", () => {
+  assert.equal(Convert.convert("length", 0, "m", "ft"), 0);
+  assert.equal(Convert.convert("temperature", 0, "K", "C"), -273.15);
+});
+
+test("knot and kilometre per hour use exact factors", () => {
+  const kn = Convert.convert("speed", 1, "kn", "mps");
+  assert.ok(Math.abs(kn - 1852 / 3600) < 1e-12);
+  const kmh = Convert.convert("speed", 1, "kmh", "mps");
+  assert.ok(Math.abs(kmh - 1000 / 3600) < 1e-12);
 });
 
 test("swap round-trip returns to the original length", () => {
@@ -169,6 +218,35 @@ test("normalizeState drops unknown category and units", () => {
   assert.equal(state.from, "m");
   assert.equal(state.to, "ft");
   assert.equal(state.value, "9");
+});
+
+test("normalizeState caps a huge value and keeps numeric zero", () => {
+  const huge = "9".repeat(200);
+  const state = Convert.normalizeState(
+    { category: "length", from: "m", to: "ft", value: huge },
+    { category: "length", from: "m", to: "ft", value: "1" }
+  );
+  assert.equal(state.value.length, Convert.MAX_VALUE_CHARS);
+  assert.equal(state.value, huge.slice(0, Convert.MAX_VALUE_CHARS));
+  const zero = Convert.normalizeState(
+    { category: "temperature", from: "C", to: "F", value: 0 },
+    { category: "length", from: "m", to: "ft", value: "1" }
+  );
+  assert.equal(zero.value, "0");
+  assert.equal(zero.category, "temperature");
+});
+
+test("oversized stored JSON is dropped", () => {
+  const storage = {
+    _v: {},
+    getItem(k) { return k in this._v ? this._v[k] : null; },
+    setItem(k, v) { this._v[k] = String(v); },
+    removeItem(k) { delete this._v[k]; },
+  };
+  storage.setItem("seclusa.convert.data", JSON.stringify({ value: "1".repeat(9000) }));
+  const { Store } = load("store.js", { localStorage: storage });
+  assert.deepEqual(Store.getData(), {});
+  assert.equal(storage.getItem("seclusa.convert.data"), null);
 });
 
 test("normalizeState keeps valid prefs", () => {

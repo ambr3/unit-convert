@@ -1,0 +1,27 @@
+# Host headers for Cloudflare Pages / Netlify. GitHub Pages ignores this file.
+# frame-ancestors and X-Frame-Options only work as real response headers.
+#
+# connect-src is 'self' here, not 'none'. The page meta stays 'none', so app
+# scripts cannot make requests (the stricter policy wins on the document).
+# The service worker is governed by this header and must be allowed to fetch
+# this app's own files. clipboard-write stays (self): Copy result needs it.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  X-DNS-Prefetch-Control: off
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), midi=(), bluetooth=(), serial=(), accelerometer=(), gyroscope=(), magnetometer=(), interest-cohort=(), browsing-topics=(), clipboard-read=(), clipboard-write=(self)
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; child-src 'none'; frame-ancestors 'none'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; require-trusted-types-for 'script'
+
+/index.html
+  Cache-Control: no-cache
+
+/offline.html
+  Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache

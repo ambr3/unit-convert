@@ -239,13 +239,11 @@ button.accentpill:active { transform: scale(.96); }
 
 .cat-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
+  overflow: visible;
   padding: 2px 2px 12px;
   margin: 0 0 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
 }
 
 .cat-chip {

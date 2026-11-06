@@ -95,9 +95,9 @@
       label: "Speed",
       units: [
         { id: "mps", label: "metre per second (m/s)", toBase: 1 },
-        { id: "kmh", label: "kilometre per hour (km/h)", toBase: 1 / 3.6 },
+        { id: "kmh", label: "kilometre per hour (km/h)", toBase: 1000 / 3600 },
         { id: "mph", label: "mile per hour (mph)", toBase: 0.44704 },
-        { id: "kn", label: "knot (kn)", toBase: 0.5144444444 },
+        { id: "kn", label: "knot (kn)", toBase: 1852 / 3600 },
         { id: "fps", label: "foot per second (ft/s)", toBase: 0.3048 }
       ]
     },
@@ -223,15 +223,19 @@
 
   /**
    * Format a converted value for display.
-   * Trims trailing zeros without forcing scientific notation for ordinary sizes.
+   * Trims trailing zeros. Ordinary sizes stay decimal; huge and tiny values
+   * use compact exponential form.
    */
   function format(value) {
     if (typeof value !== "number" || !isFinite(value)) return "—";
     if (value === 0) return "0";
 
     var abs = Math.abs(value);
-    if (abs >= 1e9 || (abs < 1e-6 && abs > 0)) {
-      return Number(value.toExponential(6)).toString();
+    if (abs >= 1e9 || abs < 1e-6) {
+      var parts = value.toExponential(6).split("e");
+      var coeff = parts[0].replace(/\.?0+$/, "");
+      var expPart = parts[1].charAt(0) === "+" ? parts[1].slice(1) : parts[1];
+      return coeff + "e" + expPart;
     }
     var digits = abs >= 1000 ? 4 : abs >= 1 ? 6 : 8;
     var fixed = value.toFixed(digits);
@@ -242,6 +246,8 @@
    * Parse a user-typed number.
    * Handles US (1,234.56) and European (1.234,56) grouping; a lone comma with
    * 1–2 fractional digits is treated as a decimal (1,5 → 1.5).
+   * A single dot is a decimal point, so 1.234 stays 1.234. Dots are thousands
+   * separators only when the groups repeat (1.234.567).
    */
   function parseInput(raw) {
     if (typeof raw !== "string") {
@@ -249,9 +255,14 @@
       return NaN;
     }
     var cleaned = raw.trim().replace(/\s/g, "");
+    if (cleaned.charAt(0) === "+") cleaned = cleaned.slice(1);
     if (cleaned === "" || cleaned === "-" || cleaned === "." || cleaned === ","
       || cleaned === "-." || cleaned === "-,") {
       return NaN;
+    }
+    if (/[.,]$/.test(cleaned)) {
+      cleaned = cleaned.slice(0, -1);
+      if (cleaned === "" || cleaned === "-") return NaN;
     }
 
     var lastComma = cleaned.lastIndexOf(",");
@@ -268,14 +279,14 @@
       }
     } else if (lastComma !== -1) {
       /* Only commas. Groups of three → thousands; otherwise decimal. */
-      if (/^-?\d{1,3}(,\d{3})+$/.test(cleaned)) {
+      if (/^-?\d{1,3}(,\d{3})+([eE][+-]?\d+)?$/.test(cleaned)) {
         normalized = cleaned.replace(/,/g, "");
       } else {
         normalized = cleaned.replace(",", ".");
       }
     } else if (lastDot !== -1) {
-      /* Only dots. Groups of three → thousands; otherwise decimal. */
-      if (/^-?\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+      /* One dot is a decimal (1.234). Two or more groups of three are thousands. */
+      if (/^-?\d{1,3}(\.\d{3}){2,}([eE][+-]?\d+)?$/.test(cleaned)) {
         normalized = cleaned.replace(/\./g, "");
       } else {
         normalized = cleaned;
@@ -287,6 +298,16 @@
     if (!/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(normalized)) return NaN;
     var n = Number(normalized);
     return isFinite(n) ? n : NaN;
+  }
+
+  var MAX_VALUE_CHARS = 64;
+
+  function clipValue(value) {
+    if (typeof value === "string") {
+      return value.length > MAX_VALUE_CHARS ? value.slice(0, MAX_VALUE_CHARS) : value;
+    }
+    if (typeof value === "number" && isFinite(value)) return String(value);
+    return null;
   }
 
   /**
@@ -302,11 +323,13 @@
     var fallbackTo = unitById(cat, d.to)
       ? d.to
       : (cat.units[1] ? cat.units[1].id : cat.units[0].id);
+    var clipped = clipValue(bag.value);
+    var fallbackValue = clipValue(d.value);
     return {
       category: category,
       from: unitById(cat, bag.from) ? bag.from : fallbackFrom,
       to: unitById(cat, bag.to) ? bag.to : fallbackTo,
-      value: typeof bag.value === "string" ? bag.value : (typeof d.value === "string" ? d.value : "1")
+      value: clipped === null ? (fallbackValue === null ? "1" : fallbackValue) : clipped
     };
   }
 
@@ -317,6 +340,7 @@
     convert: convert,
     format: format,
     parseInput: parseInput,
-    normalizeState: normalizeState
+    normalizeState: normalizeState,
+    MAX_VALUE_CHARS: MAX_VALUE_CHARS
   };
 })(typeof window !== "undefined" ? window : globalThis);
