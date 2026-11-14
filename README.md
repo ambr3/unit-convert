@@ -6,7 +6,7 @@ anywhere. Works offline once it has loaded.
 
 ## What it does
 
-- Version 0.1.4
+- Version 0.1.5
 - Convert length, mass, temperature, volume, area, speed, time, pressure, energy, data, and angle.
 - Swap units, copy the result.
 - Remembers the last category, units, and value on this device.

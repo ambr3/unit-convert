@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.5] - 2026-11-14
+
+- iOS home-screen status bar uses `black` (opaque) instead of the translucent default.
+
 ## [0.1.4] - 2026-11-06
 
 - A single decimal point stays a decimal (`1.234` is 1.234, not 1234).
