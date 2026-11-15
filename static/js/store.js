@@ -29,8 +29,8 @@
   /*
    * The theme key is the one the shared template already uses, so the
    * pre-paint script (theme-boot.js) and this file agree on one value.
-   * "system" is deliberately not a value theme-boot.js honours: it falls
-   * through to the OS preference, which is exactly what "system" means.
+   * Light or dark only. Anything else (including a leftover "system") is
+   * treated as dark — there is no OS follow mode in this app.
    */
   var KEY_THEME = "ssc.pref_key_night_mode";
 
@@ -116,34 +116,11 @@
 
   // ---------------------------------------------------------------- settings
 
-  var BG_PALETTE = {
-    grid: 1, blue: 1, lightblue: 1, teal: 1, green: 1, yellow: 1,
-    orange: 1, red: 1, purple: 1, black: 1, white: 1, custom: 1
-  };
-  var BG_LEGACY = {
-    sky: "lightblue", ocean: "blue", slate: "black", forest: "green",
-    sunset: "red", violet: "purple", rose: "red", amber: "yellow", plain: "white"
-  };
-
-  function normalizeHex(hex) {
-    if (typeof hex !== "string") return null;
-    var m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
-    return m ? "#" + m[1].toLowerCase() : null;
-  }
-
-  function normalizeBackground(background) {
-    if (BG_PALETTE[background]) return background;
-    if (BG_LEGACY[background]) return BG_LEGACY[background];
-    return "grid";
-  }
-
   function getSettings() {
     var stored = readJSON(KEY_SETTINGS, {});
     if (!stored || typeof stored !== "object" || Array.isArray(stored)) stored = {};
     return {
-      theme: stored.theme === "light" || stored.theme === "dark" ? stored.theme : "system",
-      background: normalizeBackground(stored.background),
-      bgCustom: normalizeHex(stored.bgCustom) || "#5faff0"
+      theme: stored.theme === "light" ? "light" : "dark"
     };
   }
 
@@ -167,45 +144,34 @@
   }
 
   /**
-   * Writes the theme in two places on purpose.
-   *
-   * The key the template's pre-paint script reads has to hold "light" or
-   * "dark" for that script to act on it; when the choice is "system" we store
-   * that separately and clear the pre-paint key, so the script follows the OS.
+   * Light or dark only. Written to the pre-paint key and to settings.
    */
   function setTheme(theme) {
-    var value = theme === "light" || theme === "dark" ? theme : "system";
+    var value = theme === "light" ? "light" : "dark";
     setSettings({ theme: value });
     try {
-      if (value === "system") window.localStorage.removeItem(KEY_THEME);
-      else window.localStorage.setItem(KEY_THEME, value);
+      window.localStorage.setItem(KEY_THEME, value);
       delete memory[KEY_THEME];
     } catch (err) {
-      if (value === "system") removeRaw(KEY_THEME);
-      else writeRaw(KEY_THEME, value);
+      writeRaw(KEY_THEME, value);
     }
     return value;
   }
 
-  /** One page background for the whole app — not Day/Night (Weather-only). */
   function getBackground() {
-    return getSettings().background;
+    return getTheme() === "light" ? "white" : "grid";
   }
 
-  function setBackground(background) {
-    var value = normalizeBackground(background);
-    setSettings({ background: value });
-    return value;
+  function setBackground() {
+    return getBackground();
   }
 
   function getBgCustom() {
-    return getSettings().bgCustom;
+    return "#ffffff";
   }
 
-  function setBgCustom(hex) {
-    var value = normalizeHex(hex) || "#5faff0";
-    setSettings({ bgCustom: value, background: "custom" });
-    return value;
+  function setBgCustom() {
+    return "#ffffff";
   }
 
   // -------------------------------------------------------------------- data

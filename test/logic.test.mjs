@@ -20,13 +20,11 @@ function load(file, extra = {}) {
 /* ------------------------------------------------------------------ theme */
 
 const { Theme } = load("theme.js", {
-  Store: { getTheme: () => "system", setTheme: () => {} },
-  matchMedia: () => ({ matches: true, addEventListener() {} }),
+  Store: { getTheme: () => "dark", setTheme: () => {} },
   document: {
     documentElement: { getAttribute: () => null, setAttribute() {}, removeAttribute() {} },
     querySelectorAll: () => [],
     getElementById: () => null,
-    adoptedStyleSheets: [],
   },
 });
 
@@ -35,8 +33,9 @@ test("an explicit mode resolves to itself", () => {
   assert.equal(Theme.resolve("dark"), "dark");
 });
 
-test("system mode follows the operating system", () => {
+test("unknown mode falls back to dark", () => {
   assert.equal(Theme.resolve("system"), "dark");
+  assert.equal(Theme.resolve(""), "dark");
 });
 
 /* ------------------------------------------------------------------ store */
@@ -113,8 +112,10 @@ test("litres to US gallons", () => {
 
 test("bits and bytes", () => {
   assert.equal(Convert.convert("data", 8, "bit", "B"), 1);
-  assert.equal(Convert.convert("data", 1, "KiB", "B"), 1024);
-  assert.equal(Convert.convert("data", 1, "kB", "B"), 1000);
+  assert.equal(Convert.convert("data", 1, "kB", "B"), 1024);
+  assert.equal(Convert.convert("data", 1, "MB", "kB"), 1024);
+  assert.equal(Convert.convert("data", 1, "GB", "MB"), 1024);
+  assert.equal(Convert.convert("data", 1, "TB", "GB"), 1024);
 });
 
 test("degrees to radians", () => {
@@ -173,8 +174,10 @@ test("theme is remembered when storage throws", () => {
   const { Store } = load("store.js", { localStorage: throwing });
   assert.equal(Store.setTheme("dark"), "dark");
   assert.equal(Store.getTheme(), "dark");
+  Store.setTheme("light");
+  assert.equal(Store.getTheme(), "light");
   Store.setTheme("system");
-  assert.equal(Store.getTheme(), "system");
+  assert.equal(Store.getTheme(), "dark");
 });
 
 test("a single dot is a decimal point", () => {
@@ -261,3 +264,10 @@ test("normalizeState keeps valid prefs", () => {
     value: "100",
   });
 });
+
+test("resultLabel drops the unit on Dual and keeps it on Instrument", () => {
+  assert.equal(Convert.resultLabel("light", "3.28084", "ft"), "3.28084");
+  assert.equal(Convert.resultLabel("dark", "3.28084", "ft"), "3.28084 ft");
+  assert.equal(Convert.resultLabel("dark", "3.28084", ""), "3.28084");
+});
+

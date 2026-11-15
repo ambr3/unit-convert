@@ -17,6 +17,9 @@
     value: "1"
   };
 
+  /* Shared with theme chips and boot handlers — must outlive wireTheme(). */
+  var state = null;
+
   function toast(message) {
     var node = $("toast");
     if (!node) return;
@@ -64,10 +67,15 @@
     });
   }
 
+  function shortUnitId(unit) {
+    return unit && unit.id ? unit.id : "";
+  }
+
   function renderCategories(activeId) {
     var row = $("category-row");
     if (!row) return;
     row.replaceChildren();
+    var activeBtn = null;
     window.Convert.CATEGORIES.forEach(function (cat) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -77,12 +85,31 @@
       btn.dataset.category = cat.id;
       btn.textContent = cat.label;
       row.appendChild(btn);
+      if (cat.id === activeId) activeBtn = btn;
     });
+    if (activeBtn && typeof activeBtn.scrollIntoView === "function") {
+      try {
+        activeBtn.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      } catch (err) {
+        activeBtn.scrollIntoView(false);
+      }
+    }
+  }
+
+  function setValueUnit(state) {
+    var node = $("value-unit");
+    var toLabel = $("to-unit-label");
+    var cat = window.Convert.categoryById(state.category);
+    var from = window.Convert.unitById(cat, state.from);
+    var to = window.Convert.unitById(cat, state.to);
+    if (node) node.textContent = from ? from.label : "";
+    if (toLabel) toLabel.textContent = to ? to.label : "";
   }
 
   function updateResult(state) {
     var out = $("result-value");
     var hint = $("result-hint");
+    setValueUnit(state);
     var parsed = window.Convert.parseInput(state.value);
     if (!isFinite(parsed)) {
       if (out) out.textContent = "—";
@@ -90,13 +117,20 @@
       return;
     }
     var result = window.Convert.convert(state.category, parsed, state.from, state.to);
-    if (out) out.textContent = window.Convert.format(result);
+    var cat = window.Convert.categoryById(state.category);
+    var to = window.Convert.unitById(cat, state.to);
+    var toId = shortUnitId(to);
+    var theme = document.documentElement.getAttribute("data-theme");
+    if (out) {
+      if (!isFinite(result)) {
+        out.textContent = "—";
+      } else {
+        out.textContent = window.Convert.resultLabel(theme, window.Convert.format(result), toId);
+      }
+    }
     if (hint) {
-      var cat = window.Convert.categoryById(state.category);
-      var from = window.Convert.unitById(cat, state.from);
-      var to = window.Convert.unitById(cat, state.to);
-      hint.textContent = (from && to)
-        ? (window.Convert.format(parsed) + " " + from.label + " → " + to.label)
+      hint.textContent = toId
+        ? (window.Convert.format(parsed) + " → " + toId)
         : "";
     }
   }
@@ -117,7 +151,7 @@
 
   function syncThemeChrome() {
     if (window.Theme.paintModeChrome) window.Theme.paintModeChrome();
-    if (window.Theme.paintBgChrome) window.Theme.paintBgChrome();
+    if (window.Theme.paintBackground) window.Theme.paintBackground();
   }
 
   function showSheet(id) {
@@ -177,38 +211,12 @@
     document.querySelectorAll("[data-theme-opt]").forEach(function (chip) {
       chip.addEventListener("click", function () {
         var mode = chip.getAttribute("data-theme-opt");
-        if (mode !== "system" && mode !== "light" && mode !== "dark") return;
+        if (mode !== "light" && mode !== "dark") return;
         window.Theme.set(mode);
         syncThemeChrome();
+        if (state) updateResult(state);
       });
     });
-
-    document.querySelectorAll("[data-bg-opt]").forEach(function (swatch) {
-      swatch.addEventListener("click", function (event) {
-        var opt = swatch.getAttribute("data-bg-opt");
-        if (!opt) return;
-        if (opt === "custom") {
-          var picker = $("bgCustomPicker");
-          if (picker && event.target !== picker) {
-            try { picker.click(); } catch (err) { /* ignore */ }
-          }
-          window.Theme.setBackground("custom");
-        } else {
-          window.Theme.setBackground(opt);
-        }
-        syncThemeChrome();
-      });
-    });
-
-    var picker = $("bgCustomPicker");
-    if (picker) {
-      var onCustom = function () {
-        window.Theme.setCustomBackground(picker.value);
-        syncThemeChrome();
-      };
-      picker.addEventListener("input", onCustom);
-      picker.addEventListener("change", onCustom);
-    }
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
@@ -248,9 +256,8 @@
   }
 
   function boot() {
+    state = loadState();
     wireTheme();
-
-    var state = loadState();
     paint(state);
 
     on("category-row", "click", function (event) {
@@ -311,8 +318,7 @@
         to: DEFAULTS.to,
         value: DEFAULTS.value
       };
-      window.Theme.set("system");
-      window.Theme.setBackground("grid");
+      window.Theme.set("dark");
       syncThemeChrome();
       paint(state);
       closeSheet();

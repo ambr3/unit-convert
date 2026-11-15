@@ -15,8 +15,8 @@
    *   label — short display name
    *   toBase / fromBase — for linear units; omitted for temperature
    *
-   * Storage uses SI decimal prefixes (kB = 1000 B). Binary prefixes are
-   * separate units (KiB, MiB, …).
+   * Data sizes use binary powers (kB = 1024 B, MB = 1024 kB, …), matching
+   * how operating systems and RAM are counted.
    */
   var CATEGORIES = [
     {
@@ -147,14 +147,10 @@
       label: "Data",
       units: [
         { id: "B", label: "byte (B)", toBase: 1 },
-        { id: "kB", label: "kilobyte (kB)", toBase: 1e3 },
-        { id: "MB", label: "megabyte (MB)", toBase: 1e6 },
-        { id: "GB", label: "gigabyte (GB)", toBase: 1e9 },
-        { id: "TB", label: "terabyte (TB)", toBase: 1e12 },
-        { id: "KiB", label: "kibibyte (KiB)", toBase: 1024 },
-        { id: "MiB", label: "mebibyte (MiB)", toBase: Math.pow(1024, 2) },
-        { id: "GiB", label: "gibibyte (GiB)", toBase: Math.pow(1024, 3) },
-        { id: "TiB", label: "tebibyte (TiB)", toBase: Math.pow(1024, 4) },
+        { id: "kB", label: "kilobyte (kB)", toBase: 1024 },
+        { id: "MB", label: "megabyte (MB)", toBase: Math.pow(1024, 2) },
+        { id: "GB", label: "gigabyte (GB)", toBase: Math.pow(1024, 3) },
+        { id: "TB", label: "terabyte (TB)", toBase: Math.pow(1024, 4) },
         { id: "bit", label: "bit", toBase: 0.125 }
       ]
     },
@@ -300,6 +296,16 @@
     return isFinite(n) ? n : NaN;
   }
 
+  /**
+   * Result readout text. Dual (light) shows the number only; Instrument (dark)
+   * appends the short unit id. Used by the UI and covered by a unit test so a
+   * layout switch cannot silently keep the wrong suffix.
+   */
+  function resultLabel(theme, formatted, unitId) {
+    if (theme === "light") return String(formatted);
+    return unitId ? String(formatted) + " " + unitId : String(formatted);
+  }
+
   var MAX_VALUE_CHARS = 64;
 
   function clipValue(value) {
@@ -340,6 +346,7 @@
     convert: convert,
     format: format,
     parseInput: parseInput,
+    resultLabel: resultLabel,
     normalizeState: normalizeState,
     MAX_VALUE_CHARS: MAX_VALUE_CHARS
   };

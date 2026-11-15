@@ -24,7 +24,7 @@
  *     they hard-reload: new hashes, old bytes.
  */
 
-const VERSION = "0.1.5";
+const VERSION = "0.1.6";
 const CACHE_PREFIX = "seclusa-convert-";
 const CACHE = `${CACHE_PREFIX}v${VERSION}`;
 
@@ -62,7 +62,7 @@ const PRECACHE = [
  * else is served from the network and never written down.
  */
 function cacheable(url) {
-  return url.search === "" || /^\?v=[0-9][\d.]*$/.test(url.search);
+  return url.search === "" || /^\?v=[0-9][\d.]*(?:-dev)?$/.test(url.search);
 }
 
 /**

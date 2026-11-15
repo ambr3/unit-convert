@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.1.6] - 2026-11-15
+
+- Two layouts only: Instrument (dark readout) and Dual (stacked From / To cards). No System mode, no background colours.
+- Instrument UI polish: monospace readout, rounded panel, short landscape fit with footer at the bottom.
+- Theme switch refreshes the result unit suffix; layout chips use a radiogroup.
+- Data sizes use 1024 (1 GB = 1024 MB). Separate KiB/MiB labels removed as duplicates.
+- Offline shell defaults match Instrument. Service worker cache is 0.1.6.
+
 ## [0.1.5] - 2026-11-14
 
 - iOS home-screen status bar uses `black` (opaque) instead of the translucent default.

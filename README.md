@@ -6,11 +6,11 @@ anywhere. Works offline once it has loaded.
 
 ## What it does
 
-- Version 0.1.5
+- Version 0.1.6
 - Convert length, mass, temperature, volume, area, speed, time, pressure, energy, data, and angle.
 - Swap units, copy the result.
 - Remembers the last category, units, and value on this device.
-- Theme sheet: System / Light / Dark, plus orange lines or a solid / custom background.
+- Theme sheet: Instrument (dark readout) or Dual (stacked From / To cards). No other colour modes.
 - Clear saved data, from the theme sheet, removes the saved conversion and theme choices on this device.
 
 ## Usage

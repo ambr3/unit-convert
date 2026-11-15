@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light" data-bg="grid">
+<html lang="en" data-theme="dark" data-bg="grid">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Convert units on this device. Nothing is sent anywhere.">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#0a0a0a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Seclusa Convert">
-  <meta name="version" content="0.1.5">
+  <meta name="version" content="0.1.6">
 
   <!--
     Permissions-Policy in a <meta> tag is inert. Browsers only honour it as a
@@ -42,41 +41,43 @@
 
 <header class="topbar">
   <div class="topbar-row">
-    <h1 class="brand">Seclusa Convert</h1>
-    <button type="button" class="accentpill" id="btn-theme" aria-haspopup="dialog" aria-controls="sheet-theme">Theme</button>
+    <h1 class="brand"><span class="brand-mark">Seclusa</span> Convert</h1>
+    <button type="button" class="theme-btn" id="btn-theme" aria-haspopup="dialog" aria-controls="sheet-theme">Theme</button>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="cat-row" id="category-row" role="tablist" aria-label="Unit category"></div>
+  <p class="cat-label" id="category-label">Category</p>
+  <div class="cat-row" id="category-row" role="tablist" aria-labelledby="category-label"></div>
 
   <section class="converter" aria-label="Unit converter">
-    <label class="field">
-      <span class="field-label">Value</span>
-      <input type="text" id="from-value" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Value to convert">
-    </label>
-
-    <label class="field">
-      <span class="field-label">From</span>
-      <select id="from-unit" aria-label="From unit"></select>
-    </label>
-
-    <div class="swap-row">
-      <button type="button" class="btn" id="btn-swap" aria-label="Swap units">↕ Swap</button>
+    <div class="from-stack">
+      <div class="from-block">
+        <span class="field-label from-label">From</span>
+        <select id="from-unit" aria-label="From unit"></select>
+      </div>
+      <div class="value-block">
+        <span class="field-label value-label">Value</span>
+        <input type="text" id="from-value" inputmode="decimal" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Value to convert">
+        <span class="value-unit" id="value-unit"></span>
+      </div>
     </div>
 
-    <label class="field">
+    <button type="button" class="btn-swap" id="btn-swap" aria-label="Swap units" title="Swap units">⇄</button>
+
+    <div class="to-block">
       <span class="field-label">To</span>
       <select id="to-unit" aria-label="To unit"></select>
-    </label>
+      <span class="to-unit-sub" id="to-unit-label"></span>
+    </div>
 
     <div class="result" aria-live="polite">
-      <div class="result-label">Result</div>
-      <div class="result-value" id="result-value">—</div>
-      <div class="result-hint" id="result-hint"></div>
-      <div class="buttonrow mt12">
-        <button type="button" class="btn" id="btn-copy">Copy result</button>
+      <div class="result-head">
+        <span class="result-label">Result</span>
+        <span class="result-hint" id="result-hint"></span>
       </div>
+      <div class="result-value" id="result-value">—</div>
+      <button type="button" class="btn-copy" id="btn-copy">Copy result</button>
     </div>
   </section>
 
@@ -94,29 +95,12 @@
 <div class="sheet" id="sheet-theme" role="dialog" aria-modal="false" aria-label="Theme" aria-hidden="true" inert>
   <div class="sheet-handle" aria-hidden="true"></div>
   <h3>Theme</h3>
-  <p class="note">Mode</p>
-  <div class="theme-mode-row" role="group" aria-label="Colour mode">
-    <button type="button" class="theme-chip" data-theme-opt="system" role="menuitemradio" aria-checked="false">System</button>
-    <button type="button" class="theme-chip" data-theme-opt="light" role="menuitemradio" aria-checked="false">Light</button>
-    <button type="button" class="theme-chip" data-theme-opt="dark" role="menuitemradio" aria-checked="false">Dark</button>
+  <p class="note">Layout</p>
+  <div class="theme-mode-row" role="radiogroup" aria-label="Layout">
+    <button type="button" class="theme-chip" data-theme-opt="dark" role="radio" aria-checked="false">Instrument</button>
+    <button type="button" class="theme-chip" data-theme-opt="light" role="radio" aria-checked="false">Dual</button>
   </div>
-  <p class="note">Background</p>
-  <div class="theme-swatches" role="group" aria-label="Background style">
-    <button type="button" class="theme-swatch" data-bg-opt="grid" aria-label="Lines" title="Orange lines" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="blue" aria-label="Blue" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="lightblue" aria-label="Light blue" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="teal" aria-label="Teal" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="green" aria-label="Green" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="yellow" aria-label="Yellow" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="orange" aria-label="Orange" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="red" aria-label="Red" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="purple" aria-label="Purple" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="black" aria-label="Black" role="menuitemradio" aria-checked="false"></button>
-    <button type="button" class="theme-swatch" data-bg-opt="white" aria-label="White" role="menuitemradio" aria-checked="false"></button>
-    <label class="theme-swatch theme-swatch-custom" id="bgCustomSwatch" data-bg-opt="custom" title="Custom colour" aria-label="Custom colour" role="menuitemradio" aria-checked="false">
-      <input type="color" id="bgCustomPicker" value="#5faff0" aria-label="Pick a custom background colour">
-    </label>
-  </div>
+  <p class="note">Instrument is the dark readout panel. Dual is the stacked From / To cards.</p>
   <p class="note">On this device</p>
   <div class="theme-mode-row">
     <button type="button" class="btn" id="btn-clear">Clear saved data</button>
