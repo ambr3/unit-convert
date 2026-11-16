@@ -348,7 +348,6 @@
         try {
           console.warn("Seclusa Convert: service worker registration failed");
         } catch (e) { /* ignore */ }
-        toast("Offline install failed");
       });
     }
   }

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-16
+
+- Service worker registration failures no longer flash an "Offline install failed" toast on start.
+
 ## [0.1.6] - 2026-11-15
 
 - Two layouts only: Instrument (dark readout) and Dual (stacked From / To cards). No System mode, no background colours.
